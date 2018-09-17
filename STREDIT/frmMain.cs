@@ -48,7 +48,7 @@ namespace STREDIT
             public uint Max { get; set; }
             public uint Size { get { return Max - Min; } }
             public sBlockSize() { Min = uint.MaxValue; Max = uint.MinValue; }
-            public sBlockSize(uint pMin, uint pMax) { Min = pMin; Max = pMax ; }
+            public sBlockSize(uint pMin, uint pMax) { Min = pMin; Max = pMax; }
         }
 
         static sBlockSize BlockStringPool = new sBlockSize();
@@ -165,13 +165,14 @@ namespace STREDIT
                 {
                     if (!File.Exists(file)) continue;
                     tsmi = new ToolStripMenuItem(i++ + " - " + file);
-                    tsmi.Click += (s, e) => {
+                    tsmi.Click += (s, e) =>
+                    {
                         if (loadThread != null) return;
                         string lol = s.ToString();
                         string tmp = lol.Remove(0, lol.IndexOf("- ") + 2);
 
-                        new System.Threading.Thread(() => LoadFile(tmp)).Start(); 
-                    
+                        new System.Threading.Thread(() => LoadFile(tmp)).Start();
+
                     };
                     openToolStripMenuItem.DropDownItems.Add(tsmi);
                 }
@@ -261,6 +262,7 @@ namespace STREDIT
                         FileOffset += 0x1000;
                     }
                     DLOG.WriteLine("[DEBUG] Current File Offset {0:X8}", FileOffset);
+                    DLOG.WriteLine("[DEBUG] Base address {0:X8}", FileAlignment + FileOffset);
                 }
 
                 #endregion
@@ -291,101 +293,20 @@ namespace STREDIT
 
                 #endregion
                 AddPoint();
-
-                byte[] DecodeFunctionCall = ByteStringToArray(
-                     "8B 86 AA AA AA AA " +
-                     "0F BE 00 " +
-                     "6A 04 " +
-                     "B9 AA AA AA 00" + // Addr of stringpos
-                     "89 45 F0 " +
-                     "E8 AA AA AA AA " +
-                     "8B C8 " +
-                     "89 4D 0C " +
-                     "85 C9 " +
-                     "C6 45 FC 01 " +
-                     "74 1A " +
-                     "8B 86 AA AA AA 00 " + // Addr of stringpos
-                     "83 21 00 " +
-                     "40 " +
-                     "6A FF " +
-                     "50 " +
-                     "E8 AA AA AA AA " +
-                     "AA 45 0C " +
-                     "89 45 0C " +
-                     "EB 04 " +
-                     "83 65 0C 00 " +
-                     "FF 75 F0 " +
-                     "80 65 FC 00 " +
-                     "FF 35 AA AA AA 00" + // Addr of keysize (does not exist in V.90+, default of 0x10 is used in push!)
-                     "68 AA AA AA 00 " +
-                     "FF 75 0C " +
-                     "E8 AA AA 00 00"); // Addr of key
-
-                byte[] MakeVersionString = ByteStringToArray(
-                    "68 AA AA 00 00" + // Push string
-                    "50" + // Push EAX
-                    "E8 AA AA AA 00 " + // CALL GetInstance 
-                    "8B C8" + // Mov ECX, EAX
-                    "E8 AA AA AA AA" + // Call GetString
-                    "8B 00 " + // Mov EAX, [EAX]
-                    "6A AA"); // Push Version
-
                 bool gotkeysize = false;
 
-                DLOG.WriteLine("[DEBUG] ---------------Trying Method 1-------------");
-                if (!FindAoBInFile(br, 0x006074F3 - FileOffset, DecodeFunctionCall, 0xAA, true))
+                if (!TryDecodeFunctionCall1(br, ref keypos_fp))
                 {
-                    DLOG.WriteLine("[DEBUG] ---------------Trying Method 2-------------");
-
-
-                    byte[] k = ByteStringToArray(
-                        "C6 44 24 28 01" +
-                        "85 F6" +
-                        "74 AA" +
-                        "8B 0C AD AA AA AA AA" +
-                        "83 C1 01"); // Addr of key
-                    if (!FindAoBInFile(br, 0x007074F3 - FileOffset, k, 0xAA, true))
+                    if (!TryDecodeFunctionCall2(br, ref keypos_fp))
                     {
-                        DLOG.WriteLine("[DEBUG] ---------------Trying Method 3-------------");
 
-                        k = ByteStringToArray(
-                            "33 F6" + // XOR ESI ESI
-                            "8B AA 24 30" +
-                            "AA" +
-                            "6A 10" +
-                            "68 AA AA AA AA" +
-                            "56"); // Addr of key
-                        if (!FindAoBInFile(br, 0x00700000 - FileOffset, k, 0xAA, true))
+                        if (!TryDecodeFunctionCall3(br, ref keypos_fp))
                         {
-                            DLOG.WriteLine("[DEBUG] ---------------Trying Method 4-------------");
-                            k = ByteStringToArray(
-                                "FF75 AA" + // PUSH DWORD PTR SS:[EBP-?], 0
-                                "C645 AA AA" + // MOV BYTE PTR SS:[EBP-?], 0
-                                "6A 10" +
-                                "68 AA AA AA AA" +
-                                "FF75 AA"); // Addr of key
-                            if (!FindAoBInFile(br, 0x00700000 - FileOffset, k, 0xAA, true))
+
+                            if (!TryDecodeFunctionCall4(br, ref keypos_fp))
                             {
-                                DLOG.WriteLine("[DEBUG] ---------------Trying Method 5-------------");
-                                k = ByteStringToArray(
-                                    "8B 86 " + LOCATION_FLAG_STRING + "  AA AA AA AA" + // Push strings
-                                    "83 21 00" +
-                                    "40" +
-                                    "6A FF" +
-                                    "50" +
-                                    "E8 CC A0 E3 FF" +
-                                    "8B 45 AA" +
-                                    "89 45 AA" +
-                                    "EB 04" +
-                                    "83 65 AA AA" +
-                                    "FF 75 F0" +
-                                    "C6 45 AA AA" +
-                                    "6A " + LOCATION_FLAG_STRING + "  10" + // Push key size
-                                    "68 " + LOCATION_FLAG_STRING + "  AA AA AA AA" + // Push key
-                                    "FF 75 0C " +
-                                    "E8   AA AA AA AA" // Call decoder
-                                    ); 
-                                if (!FindAoBInFile(br, 0x00500000 - FileOffset, k, 0xAA, true))
+
+                                if (!TryDecodeFunctionCall5(br, ref keypos_fp))
                                 {
                                     DLOG.WriteLine("[ERROR] >>>>>>>>>>> Could not find Decode Function Call");
                                     DLOG.WriteLine("[ERROR] No other AoB's available at the moment");
@@ -394,211 +315,28 @@ namespace STREDIT
                                 }
                                 else
                                 {
-                                    DLOG.WriteLine("[INFO] -   >>> METHOD 5 SUCCEEDED <<<");
-                                    DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
-
-                                    br.BaseStream.Position = locationFlags[2];
-                                    KeyPos = br.ReadUInt32();
-
-                                    br.BaseStream.Position = locationFlags[1];
-                                    byte ks = br.ReadByte();
-                                    _DecodeKeySize = ks;
-
-
-                                    KeySizePos = KeyPos + ks;
-                                    StringsAmountPos = KeySizePos + 4;
-
-
-                                    br.BaseStream.Position = locationFlags[0];
-                                    StringsPos = br.ReadUInt32();
                                     gotkeysize = true;
-
-                                    if (keypos_fp != -1)
-                                    {
-                                        int diff = (int)KeyPos - keypos_fp;
-                                        DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                                        if (diff != FileOffset)
-                                        {
-                                            DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                                            FileOffset = (uint)diff;
-                                        }
-                                    }
                                 }
                             }
                             else
                             {
-                                DLOG.WriteLine("[INFO] -   >>> METHOD 4 SUCCEEDED <<<");
-                                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
-                                var tmpppp = br.BaseStream.Position;
-
-                                br.BaseStream.Position += 8;
-                                byte ks = br.ReadByte();
-                                _DecodeKeySize = ks;
-                                br.BaseStream.Position++;
-
-                                KeyPos = br.ReadUInt32();
-
-                                if (keypos_fp != -1)
-                                {
-                                    int diff = (int)KeyPos - keypos_fp;
-                                    DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                                    if (diff != FileOffset)
-                                    {
-                                        DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                                        FileOffset = (uint)diff;
-                                    }
-                                }
-
-                                KeySizePos = KeyPos + ks;
-                                StringsAmountPos = KeySizePos + 4;
-
-
-                                if (!FindAoBInFile(br, (uint)tmpppp - 0x300, ByteStringToArray(
-                                    "74 1A " +
-                                    "8B 86 AA AA AA AA " + // Addr of stringpos
-                                    "83 21 00 " +
-                                    "40 "), 0xAA, true))
-                                {
-                                    DLOG.WriteLine("[INFO] Failed seeking the location of strings reference");
-                                    MessageBox.Show("For some reason, MapleStory doesn't like me and I couldn't find the strings location.. :(");
-                                    return;
-                                }
-
-                                DebugBuffer(br);
-
-                                br.BaseStream.Position += 4;
-                                StringsPos = br.ReadUInt32();
-                                if (FileAlignment != 0x1000)
-                                {
-                                    //StringsPos -= 0xC00; // FU
-                                }
                                 gotkeysize = true;
                             }
                         }
                         else
                         {
-                            DLOG.WriteLine("[INFO] -   >>> METHOD 3 SUCCEEDED <<<");
-                            DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
-                            var tmpppp = br.BaseStream.Position - 0x1A;
-
-                            br.BaseStream.Position += 8;
-                            byte ks = br.ReadByte();
-                            _DecodeKeySize = ks;
-                            br.BaseStream.Position++;
-                            KeyPos = br.ReadUInt32();
-
-                            if (keypos_fp != -1)
-                            {
-                                int diff = (int)KeyPos - keypos_fp;
-                                DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                                if (diff != FileOffset)
-                                {
-                                    DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                                    FileOffset = (uint)diff;
-                                }
-                            }
-
-                            KeySizePos = KeyPos + ks;
-                            StringsAmountPos = KeySizePos + 4;
-
-
-                            br.BaseStream.Position = tmpppp + 3;
-                            StringsPos = br.ReadUInt32();
                             gotkeysize = true;
                         }
                     }
                     else
                     {
-                        DLOG.WriteLine("[INFO] -   >>> METHOD 2 SUCCEEDED <<<");
-                        DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
-                        br.BaseStream.Position += 5 + 2 + 2 + 3;
-                        StringsPos = br.ReadUInt32();
-
-                        br.BaseStream.Position += 0x44 + 2;
-                        byte ks = br.ReadByte();
-
-                        if (ks != 0x10) // GMS V.115+
-                        {
-                            br.BaseStream.Position += 6; // 0.0
-
-                            ks = br.ReadByte();
-                            _DecodeKeySize = ks;
-                            br.BaseStream.Position++;
-
-                            KeyPos = br.ReadUInt32();
-
-                            if (FileAlignment != 0x1000)
-                            {
-                                FileOffset -= 0x1000 + (FileAlignment * 2); // FU
-                            }
-
-                            if (keypos_fp != -1)
-                            {
-                                int diff = (int)KeyPos - keypos_fp;
-                                DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                                if (diff != FileOffset)
-                                {
-                                    DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                                    FileOffset = (uint)diff;
-                                }
-                            }
-
-                            br.BaseStream.Position = KeyPos - FileOffset;
-                            KeySizePos = KeyPos + ks;
-                            StringsAmountPos = KeySizePos + 4;
-                        }
-                        else
-                        {
-                            _DecodeKeySize = ks;
-                            br.BaseStream.Position++;
-                            KeyPos = br.ReadUInt32();
-
-                            if (FileAlignment != 0x1000)
-                            {
-                                FileOffset -= 0x1000 + (FileAlignment * 2); // FU
-                            }
-
-                            if (keypos_fp != -1)
-                            {
-                                int diff = (int)KeyPos - keypos_fp;
-                                DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                                if (diff != FileOffset)
-                                {
-                                    DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                                    FileOffset = (uint)diff;
-                                }
-                            }
-
-                            KeySizePos = KeyPos + ks;
-                            StringsAmountPos = KeySizePos + 4;
-                        }
                     }
                 }
                 else
                 {
-                    DLOG.WriteLine("[INFO] -   >>> METHOD 1 SUCCEEDED <<<");
-                    DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
-                    br.BaseStream.Position += 2;
-                    StringsPos = br.ReadUInt32();
-
-                    br.BaseStream.Position += 0x44 + 2;
-                    KeySizePos = br.ReadUInt32();
-                    br.BaseStream.Position++;
-                    KeyPos = br.ReadUInt32();
-                    StringsAmountPos = KeySizePos + 4;
-
-                    if (keypos_fp != -1)
-                    {
-                        int diff = (int)KeyPos - keypos_fp;
-                        DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
-                        if (diff != FileOffset)
-                        {
-                            DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
-                            FileOffset = (uint)diff;
-                        }
-                    }
-
                 }
+
+
 
                 #endregion
                 AddPoint();
@@ -722,7 +460,7 @@ namespace STREDIT
                         "E8 AA AA AA AA" // Call GetString
                         );
 
-                    var DetermineType = (Func<long, object[]>)delegate(long Address)
+                    var DetermineType = (Func<long, object[]>)delegate (long Address)
                     {
                         string t = "";
                         StringDecodeTypes sdt = StringDecodeTypes.Unknown;
@@ -1191,7 +929,7 @@ namespace STREDIT
                                     DLOG.WriteLine("[INFO] Could not find correct AoB :|");
                                     break;
                                 }
-                                
+
                             }
                         }
                     }
@@ -1481,7 +1219,7 @@ namespace STREDIT
                 {
                     br.BaseStream.Position = PlainOffsetToFileOffset(KeySizePos);
                     int keysize = br.ReadInt32();
-                    DLOG.WriteLine("[DEBUG] Decode Key Size: {0} bytes", keysize);
+                    DLOG.WriteLine("[DEBUG] Decode Key Size: {0} bytes at pos {1}", keysize, PlainOffsetToFileOffset(KeySizePos));
                     if (16 != keysize)
                     {
                         DLOG.WriteLine(string.Format("[ERROR] Wups. 2 different size of keys! {0} and {1}", _DecodeKeySize, keysize));
@@ -1527,7 +1265,11 @@ namespace STREDIT
                     string address = "-";
                     if (containsKey)
                     {
-                        decodeType = StringReferences[i].First((a) => { address = (a.Key + FileOffset).ToString("X8"); return true; }).Value; // Awesomeness itself
+                        decodeType = StringReferences[i].First((a) =>
+                        {
+                            address = (a.Key + FileOffset).ToString("X8");
+                            return true;
+                        }).Value; // Awesomeness itself
                     }
                     dt.Rows.Add(i, decoded, unicode, containsKey, decodeType, address);
                 }
@@ -1587,6 +1329,436 @@ namespace STREDIT
                 File.AppendAllText(Program.DATAFOLDER + "exlog.txt", "--------------Exception--------------\r\n" + ex.ToString() + "\r\n\r\n\r\n\r\n");
             }
         }
+
+        #region StringPool GetString methods
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="br"></param>
+        /// <param name="keypos_fp"></param>
+        /// <returns></returns>
+        private bool TryDecodeFunctionCall1(BinaryReader br, ref int keypos_fp)
+        {
+            byte[] DecodeFunctionCall = ByteStringToArray(
+                     "8B 86 AA AA AA AA " +
+                     "0F BE 00 " +
+                     "6A 04 " +
+                     "B9 AA AA AA 00" + // Addr of stringpos
+                     "89 45 F0 " +
+                     "E8 AA AA AA AA " +
+                     "8B C8 " +
+                     "89 4D 0C " +
+                     "85 C9 " +
+                     "C6 45 FC 01 " +
+                     "74 1A " +
+                     "8B 86 AA AA AA 00 " + // Addr of stringpos
+                     "83 21 00 " +
+                     "40 " +
+                     "6A FF " +
+                     "50 " +
+                     "E8 AA AA AA AA " +
+                     "AA 45 0C " +
+                     "89 45 0C " +
+                     "EB 04 " +
+                     "83 65 0C 00 " +
+                     "FF 75 F0 " +
+                     "80 65 FC 00 " +
+                     "FF 35 AA AA AA 00" + // Addr of keysize (does not exist in V.90+, default of 0x10 is used in push!)
+                     "68 AA AA AA 00 " +
+                     "FF 75 0C " +
+                     "E8 AA AA 00 00"); // Addr of key
+
+            byte[] MakeVersionString = ByteStringToArray(
+                "68 AA AA 00 00" + // Push string
+                "50" + // Push EAX
+                "E8 AA AA AA 00 " + // CALL GetInstance 
+                "8B C8" + // Mov ECX, EAX
+                "E8 AA AA AA AA" + // Call GetString
+                "8B 00 " + // Mov EAX, [EAX]
+                "6A AA"); // Push Version
+
+            DLOG.WriteLine("[DEBUG] ---------------Trying Method 1-------------");
+            if (FindAoBInFile(br, 0x006074F3 - FileOffset, DecodeFunctionCall, 0xAA, true))
+            {
+                DLOG.WriteLine("[INFO] -   >>> METHOD 1 SUCCEEDED <<<");
+                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
+                br.BaseStream.Position += 2;
+                StringsPos = br.ReadUInt32();
+
+                br.BaseStream.Position += 0x44 + 2;
+                KeySizePos = br.ReadUInt32();
+                br.BaseStream.Position++;
+                KeyPos = br.ReadUInt32();
+                StringsAmountPos = KeySizePos + 4;
+
+                if (keypos_fp != -1)
+                {
+                    int diff = (int)KeyPos - keypos_fp;
+                    DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                    if (diff != FileOffset)
+                    {
+                        DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                        FileOffset = (uint)diff;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="br"></param>
+        /// <param name="keypos_fp"></param>
+        /// <returns></returns>
+        private bool TryDecodeFunctionCall2(BinaryReader br, ref int keypos_fp)
+        {
+            /*
+             * _DWORD *__fastcall sub_82ACC0(_DWORD *a1, int a2, _DWORD *a3, int a4, int a5)
+{
+  _DWORD *v5; // ebx
+  int v6; // ebp
+  _DWORD *v7; // edi
+  _DWORD *v8; // eax
+  _DWORD *v9; // esi
+  int v10; // ecx
+  bool v11; // zf
+  const char *v12; // ecx
+  size_t v13; // edi
+  const char *v14; // ST08_4
+  void *v15; // eax
+  int v16; // ST0C_4
+  _DWORD *result; // eax
+  int v18; // [esp+14h] [ebp-18h]
+
+  v5 = a1;
+  switch ( a1[4] )
+  {
+    case 1:
+      v6 = dword_E9D910[a4];
+      break;
+    case 2:
+      v6 = dword_EA60C8[a4];
+      break;
+    case 3:
+      v6 = dword_EAE880[a4];
+      break;
+    case 4:
+      v6 = dword_EB7038[a4];
+      break;
+    case 5:
+      v6 = dword_EBF7F0[a4];
+      break;
+    default:
+      v6 = a4;
+      break;
+  }
+  v7 = a1 + 2;
+  a4 = (int)(a1 + 2);
+  sub_401070(&a4);
+  if ( !*(_DWORD *)(*v5 + 4 * v6) )
+  {
+    v18 = *(_BYTE *)*(&off_FB7D70 + v6);
+    v8 = (_DWORD *)sub_401E20(4);
+    v9 = v8;
+    if ( v8 )
+    {
+      v10 = (int)*(&off_FB7D70 + v6);
+      v11 = v10 == -1; // mov ecx,[ebp*4+00FB7D70]
+      v12 = (const char *)(v10 + 1);  // add ecx,01
+      *v8 = 0; // mov [esi],00000000
+      if ( !v11 )
+      {
+        v13 = strlen(v12);
+        v14 = v12;
+        v15 = (void *)sub_421020(v13, 0);
+        memcpy_0(v15, v14, v13);
+        sub_4201B0(v13);
+        v7 = (_DWORD *)a4;
+      }
+    }
+    else
+    {
+      v9 = 0;
+    }
+    sub_82AA90(v9, dword_E9D8F8, 0x10, v18);    // >>>> 0x10 
+    *(_DWORD *)(*v5 + 4 * v6) = v9;
+  }
+  v16 = *(_DWORD *)(*v5 + 4 * v6);
+  *a3 = 0;
+  ZXString<char>::operator=(v16);
+  result = a3;
+  if ( !v7 )
+    return result;
+  v11 = v7[1]-- == 1;
+  if ( v11 )
+    *v7 = 0;
+  return result;
+}*/
+
+            byte[] k = ByteStringToArray(
+                "C6 44 24 28 01" + // mov byte ptr [esp+28],01
+                "85 F6" + // test esi,esi
+                "74 AA" + // je 0082ADDE
+                "8B 0C AD AA AA AA AA" + // mov ecx,[ebp*4+00FB7D70]
+                "83 C1 01");  // add ecx,01
+            // Addr of key
+
+            DLOG.WriteLine("[DEBUG] ---------------Trying Method 2-------------");
+            if (FindAoBInFile(br, 0x007074F3 - FileOffset, k, 0xAA, true))
+            {
+                DLOG.WriteLine("[INFO] -   >>> METHOD 2 SUCCEEDED <<<");
+                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
+                br.BaseStream.Position += 5 + 2 + 2 + 3;
+                StringsPos = br.ReadUInt32();
+
+                DLOG.WriteLine("[DEBUG] After string pos {0:X8}", br.BaseStream.Position + FileOffset);
+
+                br.BaseStream.Position += 0x44 + 2; // 0082AD8A + 
+                byte ks = br.ReadByte();
+
+                if (ks != 0x10) // GMS V.115+
+                {
+                    br.BaseStream.Position += 6; // 0.0
+
+                    ks = br.ReadByte();
+                    if (ks != 0x10)
+                    {
+                        br.BaseStream.Position -= 2;
+                        /*
+0082ADE0                                         ; sub_82ACC0+11C↑j
+___:0082ADE0                 mov     eax, [esp+2Ch+var_18]
+___:0082ADE4                 push    eax  // another parameter added here
+___:0082ADE5                 push    10h
+___:0082ADE7                 push    offset dword_E9D8F8 // Your key position
+___:0082ADEC                 push    esi
+___:0082ADED                 mov     byte ptr [esp+3Ch+var_4], 0
+___:0082ADF2                 call    sub_82AA90
+___:0082ADF7                 mov     ecx, [ebx]
+___:0082ADF9                 add     esp, 10h
+___:0082ADFC                 mov     [ecx+ebp*4], esi
+*/
+                        ks = br.ReadByte(); // another parameter added here
+                    }
+
+                    _DecodeKeySize = ks;
+                    br.BaseStream.Position++;
+
+                    KeyPos = br.ReadUInt32();
+
+                    if (FileAlignment != 0x1000)
+                    {
+                        FileOffset -= 0x1000 + (FileAlignment * 2); // FU
+                    }
+
+                    if (keypos_fp != -1)
+                    {
+                        int diff = (int)KeyPos - keypos_fp;
+                        DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                        if (diff != FileOffset)
+                        {
+                            DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                            FileOffset = (uint)diff;
+                        }
+                    }
+
+                    br.BaseStream.Position = KeyPos - FileOffset;
+                    KeySizePos = KeyPos + ks;
+                    StringsAmountPos = KeySizePos + 4;
+                }
+                else
+                {
+                    _DecodeKeySize = ks;
+                    br.BaseStream.Position++;
+                    KeyPos = br.ReadUInt32();
+
+                    if (FileAlignment != 0x1000)
+                    {
+                        FileOffset -= 0x1000 + (FileAlignment * 2); // FU
+                    }
+
+                    if (keypos_fp != -1)
+                    {
+                        int diff = (int)KeyPos - keypos_fp;
+                        DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                        if (diff != FileOffset)
+                        {
+                            DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                            FileOffset = (uint)diff;
+                        }
+                    }
+
+                    KeySizePos = KeyPos + ks;
+                    StringsAmountPos = KeySizePos + 4;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryDecodeFunctionCall3(BinaryReader br, ref int keypos_fp)
+        {
+            byte[] k = ByteStringToArray(
+                            "33 F6" + // XOR ESI ESI
+                            "8B AA 24 30" +
+                            "AA" +
+                            "6A 10" +
+                            "68 AA AA AA AA" +
+                            "56"); // Addr of key
+
+            if (FindAoBInFile(br, 0x00700000 - FileOffset, k, 0xAA, true))
+            {
+                DLOG.WriteLine("[INFO] -   >>> METHOD 3 SUCCEEDED <<<");
+                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
+                var tmpppp = br.BaseStream.Position - 0x1A;
+
+                br.BaseStream.Position += 8;
+                byte ks = br.ReadByte();
+                _DecodeKeySize = ks;
+                br.BaseStream.Position++;
+                KeyPos = br.ReadUInt32();
+
+                if (keypos_fp != -1)
+                {
+                    int diff = (int)KeyPos - keypos_fp;
+                    DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                    if (diff != FileOffset)
+                    {
+                        DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                        FileOffset = (uint)diff;
+                    }
+                }
+
+                KeySizePos = KeyPos + ks;
+                StringsAmountPos = KeySizePos + 4;
+
+
+                br.BaseStream.Position = tmpppp + 3;
+                StringsPos = br.ReadUInt32();
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryDecodeFunctionCall4(BinaryReader br, ref int keypos_fp)
+        {
+            byte[] k = ByteStringToArray(
+                                "FF75 AA" + // PUSH DWORD PTR SS:[EBP-?], 0
+                                "C645 AA AA" + // MOV BYTE PTR SS:[EBP-?], 0
+                                "6A 10" +
+                                "68 AA AA AA AA" +
+                                "FF75 AA"); // Addr of key
+
+            if (FindAoBInFile(br, 0x00700000 - FileOffset, k, 0xAA, true))
+            {
+                DLOG.WriteLine("[INFO] -   >>> METHOD 4 SUCCEEDED <<<");
+                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
+                var tmpppp = br.BaseStream.Position;
+
+                br.BaseStream.Position += 8;
+                byte ks = br.ReadByte();
+                _DecodeKeySize = ks;
+                br.BaseStream.Position++;
+
+                KeyPos = br.ReadUInt32();
+
+                if (keypos_fp != -1)
+                {
+                    int diff = (int)KeyPos - keypos_fp;
+                    DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                    if (diff != FileOffset)
+                    {
+                        DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                        FileOffset = (uint)diff;
+                    }
+                }
+
+                KeySizePos = KeyPos + ks;
+                StringsAmountPos = KeySizePos + 4;
+
+
+                if (!FindAoBInFile(br, (uint)tmpppp - 0x300, ByteStringToArray(
+                    "74 1A " +
+                    "8B 86 AA AA AA AA " + // Addr of stringpos
+                    "83 21 00 " +
+                    "40 "), 0xAA, true))
+                {
+                    DLOG.WriteLine("[INFO] Failed seeking the location of strings reference");
+                    MessageBox.Show("For some reason, MapleStory doesn't like me and I couldn't find the strings location.. :(");
+                    return false;
+                }
+
+                DebugBuffer(br);
+
+                br.BaseStream.Position += 4;
+                StringsPos = br.ReadUInt32();
+                if (FileAlignment != 0x1000)
+                {
+                    //StringsPos -= 0xC00; // FU
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryDecodeFunctionCall5(BinaryReader br, ref int keypos_fp)
+        {
+            byte[] k = ByteStringToArray(
+                                    "8B 86 " + LOCATION_FLAG_STRING + "  AA AA AA AA" + // Push strings
+                                    "83 21 00" +
+                                    "40" +
+                                    "6A FF" +
+                                    "50" +
+                                    "E8 CC A0 E3 FF" +
+                                    "8B 45 AA" +
+                                    "89 45 AA" +
+                                    "EB 04" +
+                                    "83 65 AA AA" +
+                                    "FF 75 F0" +
+                                    "C6 45 AA AA" +
+                                    "6A " + LOCATION_FLAG_STRING + "  10" + // Push key size
+                                    "68 " + LOCATION_FLAG_STRING + "  AA AA AA AA" + // Push key
+                                    "FF 75 0C " +
+                                    "E8   AA AA AA AA" // Call decoder
+                                    );
+
+            if (FindAoBInFile(br, 0x00500000 - FileOffset, k, 0xAA, true))
+            {
+                DLOG.WriteLine("[INFO] -   >>> METHOD 5 SUCCEEDED <<<");
+                DLOG.WriteLine("[DEBUG] StringPool::GetString is around {0:X8}", br.BaseStream.Position + FileOffset);
+
+                br.BaseStream.Position = locationFlags[2];
+                KeyPos = br.ReadUInt32();
+
+                br.BaseStream.Position = locationFlags[1];
+                byte ks = br.ReadByte();
+                _DecodeKeySize = ks;
+
+
+                KeySizePos = KeyPos + ks;
+                StringsAmountPos = KeySizePos + 4;
+
+
+                br.BaseStream.Position = locationFlags[0];
+                StringsPos = br.ReadUInt32();
+
+                if (keypos_fp != -1)
+                {
+                    int diff = (int)KeyPos - keypos_fp;
+                    DLOG.WriteLine("[FileOffset] Diff: {0:X8} ({1:X8} - {2:X8})", diff, KeyPos, keypos_fp);
+                    if (diff != FileOffset)
+                    {
+                        DLOG.WriteLine("[FileOffset] NOTICED DIFFERENT FILEOFFSET. CHANGING.");
+                        FileOffset = (uint)diff;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+        #endregion
 
 
         static byte[] ByteStringToArray(params string[] pInputStrings)
@@ -1867,7 +2039,7 @@ namespace STREDIT
                 else if (esb == '\n') ret += @"\n";
                 else ret += (char)esb;
             }
-            
+
             _bstr_td_text = false;
             for (i = 0; i < ret.Length; i++)
             {
@@ -1877,7 +2049,7 @@ namespace STREDIT
                     break;
                 }
             }
-           
+
             if (_bstr_td_text)
             {
                 byte[] buffer = new byte[ret.Length];
@@ -1913,7 +2085,7 @@ namespace STREDIT
                     }
                 }
             }
-        label_26:
+            label_26:
             bool v12 = (shift & 7) == 0;
             shift &= 7;
             if (!v12)
@@ -1979,7 +2151,7 @@ namespace STREDIT
         private void dataGridView1_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
         {
             var obj = dgvStrings.Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewTextBoxCell;
-            
+
             EditingRowValue = (string)obj.Value;
 
             var encoding = CheckIfNonWestern(EditingRowValue) ? _currentEncoding : Encoding.ASCII;
@@ -2201,7 +2373,8 @@ namespace STREDIT
                     tw = (byte)'\n';
                     i++;
                 }
-                else if (esb == '\\' && esb2 == 'r') {
+                else if (esb == '\\' && esb2 == 'r')
+                {
                     tw = (byte)'\r';
                     i++;
                 }
@@ -2213,7 +2386,7 @@ namespace STREDIT
                 }
                 else
                 {
-                    tw = (byte)(tw ^ lul); 
+                    tw = (byte)(tw ^ lul);
                 }
 
                 buf.Add(tw);
@@ -2287,7 +2460,7 @@ namespace STREDIT
             {
                 textBox1.BackColor = Color.Red;
                 ((DataTable)dgvStrings.DataSource).DefaultView.RowFilter = "";
-                
+
             }
         }
 
@@ -2418,14 +2591,14 @@ namespace STREDIT
                 "\r\n" +
                 "You can use 'ID:' infront of your query to only look at the string ID. This increases the search speed." +
                 "For example:\r\n" +
-                "ID:9876 - Will highlight the string with ID 9876, if found.", 
+                "ID:9876 - Will highlight the string with ID 9876, if found.",
                 "STREDIT Search Help");
         }
 
         int currentRow = 0;
         private void btnSearchQuery_Click(object sender, EventArgs e)
         {
-            var FindInRow = (Func<string, DataGridViewRow, bool>)delegate(string what, DataGridViewRow row)
+            var FindInRow = (Func<string, DataGridViewRow, bool>)delegate (string what, DataGridViewRow row)
             {
                 what = what.ToLower();
                 if (what.StartsWith("id:"))
