@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace STREDIT
 {
@@ -315,24 +316,20 @@ namespace STREDIT
                                 }
                                 else
                                 {
-                                    gotkeysize = true;
+                                    gotkeysize = true; 
                                 }
-                            }
-                            else
+                            } else
                             {
                                 gotkeysize = true;
                             }
-                        }
-                        else
+                        } else
                         {
                             gotkeysize = true;
                         }
-                    }
-                    else
+                    } else
                     {
                     }
-                }
-                else
+                } else
                 {
                 }
 
@@ -2273,7 +2270,7 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
                                     }
                                 }
                                 */
-                                File.AppendAllText(Program.DATAFOLDER + "Saving File Log.txt", "Writing strings to client\r\n");
+                        File.AppendAllText(Program.DATAFOLDER + "Saving File Log.txt", "Writing strings to client\r\n");
 
                                 br.BaseStream.Position = StringsPos - FileOffset;
                                 int startoffset = (int)(BlockStrings.Min - FileOffset);
@@ -2396,6 +2393,11 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
             return buf.ToArray();
         }
 
+        /// <summary>
+        /// Export CSV
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
 
@@ -2405,14 +2407,25 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
             sfd.Filter = "CSV|*.csv|All|*.*";
             if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                string tmp = "";
+                StringBuilder sb = new StringBuilder();
+
                 foreach (DataRow dr in ((DataTable)dgvStrings.DataSource).Rows)
                 {
+                    //  dt.Rows.Add(i, decoded, unicode, containsKey, decodeType, address);
+
                     int id = (int)dr.ItemArray[0];
                     string s = (string)dr.ItemArray[1];
-                    tmp += string.Format("{0};\"{1}\"\r\n", id, s.Replace("\"", "\"\""));
+                    bool unicode = (bool)dr.ItemArray[2];
+                    bool containsKey = (bool)dr.ItemArray[3];
+                    StringDecodeTypes decodeType = (StringDecodeTypes)dr.ItemArray[4];
+                    string address = (string)dr.ItemArray[5];
+
+                    sb.Append(id).Append(",");
+                    sb.Append(address).Append(",");
+                    sb.Append(@"""" + s.Replace("\"", "\"\"").Replace(",", "%2C") + @""""); // Enclose it in "
+                    sb.Append(Environment.NewLine);
                 }
-                File.WriteAllText(sfd.FileName, tmp);
+                File.WriteAllText(sfd.FileName, sb.ToString());
             }
         }
 
@@ -2471,6 +2484,11 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
 
         System.Threading.Thread importCSVthread = null;
 
+        /// <summary>
+        /// Import CSV
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void importToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dgvStrings.DataSource == null || importCSVthread != null) return;
@@ -2496,10 +2514,15 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
                             Dictionary<int, string> changed = new Dictionary<int, string>();
                             foreach (string line in lines)
                             {
-                                int id = int.Parse(line.Substring(0, line.IndexOf(';')));
-                                string name = line.Substring(line.IndexOf(';') + 1);
-                                name = name.Trim('"');
-                                name = name.Replace("\"\"", "\"");
+                                string[] lineSplit = Regex.Split(line, ",");
+
+                                int id = int.Parse(lineSplit[0]);
+                                string address = lineSplit[1];
+                                string name = lineSplit[2];
+
+                                name = name.Substring(1, name.Length - 2);
+                                name = name.Replace("\"\"", "\"").Replace("%2C", ",");
+
                                 if (dt.Rows[id][1] as string != name)
                                 {
                                     int l = (dt.Rows[id][1] as string).Length - name.Length;
