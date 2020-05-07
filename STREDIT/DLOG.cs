@@ -16,7 +16,7 @@ namespace STREDIT
             {
                 Directory.CreateDirectory(Program.DATAFOLDER);
 
-                string filename = Program.DATAFOLDER + "dlog.txt";
+                string filename = Program.DATAFOLDER + "dlog2.txt";
                 Console.WriteLine("Started logging inside {0}", filename);
                 File = new StreamWriter(System.IO.File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
                 File.AutoFlush = true;

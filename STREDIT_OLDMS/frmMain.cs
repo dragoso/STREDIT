@@ -297,7 +297,6 @@ namespace STREDIT
                     // Read Sections
                     for (int i = 0; i < sections; i++)
                     {
-                        DLOG.WriteLine("> {0:X8}", br.BaseStream.Position);
 
                         string name = "";
                         char[] namebuff = br.ReadChars(8);
@@ -499,9 +498,10 @@ namespace STREDIT
 
                     dt.Columns.Add("Content", typeof(string));
                     dt.Columns.Add("Is Bstr", typeof(bool)).ReadOnly = true;
+                    dt.Columns.Add("Address", typeof(String)).ReadOnly = true;
 
 
-                    
+
 
                     _strings_start_pos = 0x10000000;
                     _strings_end_pos = 0;
@@ -519,6 +519,8 @@ namespace STREDIT
                         bool bstr = false;
                         int start = 0, end = 0;
                         string text = Decode(br, i, out bstr, out start, out end);
+                        int v11 = (4 * i) + _stringDataLoc;
+                        string ofsetv = loc.ToString("X8");
                         if (text == null) continue;
 
                         if (_strings_start_pos > start)
@@ -526,7 +528,7 @@ namespace STREDIT
                         if (_strings_end_pos < end)
                             _strings_end_pos = end;
 
-                        dt.Rows.Add(i, text, bstr);
+                        dt.Rows.Add(i, text, bstr, ofsetv);
                     }
 
                     bytesfree = _stringDataEndLoc - _strings_end_pos;
@@ -662,7 +664,6 @@ namespace STREDIT
             int stringdata = _stringDataLoc + pos + 4 + 4;
 
             uint ucs = (uint)GetValueAtIndex(pBR, 2 * length + 4 + pos);
-            //DLOG.WriteLine("{0:X8} checksum pos", _stringDataLoc + 2 * length + 4 + pos);
 
             byte[] stringbuf1 = new byte[length];
             byte[] stringbuf2 = new byte[length];
@@ -670,6 +671,7 @@ namespace STREDIT
 
             int offset1 = pos + _stringDataLoc + 4;
             int offset2 = pos + length + _stringDataLoc + 4;
+            ///DLOG.WriteLine("{0:X8} offset1", _stringDataLoc + 4 + pBR.BaseStream.Position);
 
             for (int j = 0; j < length; j++)
             {
@@ -732,9 +734,9 @@ namespace STREDIT
             try
             {
                 if (isbstr)
-                    text = Encoding.GetEncoding(949).GetString(outputbuf);
+                    text = Encoding.GetEncoding(28591).GetString(outputbuf);
                 else
-                    text = ASCIIEncoding.ASCII.GetString(outputbuf);
+                    text = Encoding.GetEncoding(28591).GetString(outputbuf);
             }
             catch (Exception)
             {
@@ -764,7 +766,7 @@ namespace STREDIT
 
             byte[] barr;
             if (CheckIfNonWestern(pString))
-                barr = Encoding.GetEncoding(949).GetBytes(pString);
+                barr = Encoding.GetEncoding(28591).GetBytes(pString);
             else
                 barr = Encoding.ASCII.GetBytes(pString);
             int length = barr.Length;
@@ -1195,7 +1197,7 @@ namespace STREDIT
             var obj = dgvStrings.Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewTextBoxCell;
 
             EditingRowValue = (string)obj.Value;
-            obj.MaxInputLength = EditingRowValue.Length + bytesfree;
+            obj.MaxInputLength = EditingRowValue.Length + 50;
         }
 
         private void btnSearchHelp_Click(object sender, EventArgs e)
@@ -1341,7 +1343,7 @@ namespace STREDIT
                 byte[] barr;
                 if (CheckIfNonWestern(str))
                 {
-                    barr = Encoding.GetEncoding(949).GetBytes(str);
+                    barr = Encoding.GetEncoding(28591).GetBytes(str);
                 }
                 else
                 {

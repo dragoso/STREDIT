@@ -1367,6 +1367,7 @@ namespace STREDIT
                      "E8 AA AA 00 00"); // Addr of key
 
             byte[] MakeVersionString = ByteStringToArray(
+
                 "68 AA AA 00 00" + // Push string
                 "50" + // Push EAX
                 "E8 AA AA AA 00 " + // CALL GetInstance 
@@ -2553,13 +2554,13 @@ ___:0082ADFC                 mov     [ecx+ebp*4], esi
 
         private void openUpDlogtxtToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (File.Exists("" + Program.DATAFOLDER + "dlog.txt"))
+            if (File.Exists("" + Program.DATAFOLDER + "dlog2.txt"))
             {
-                System.Diagnostics.Process.Start("notepad", "" + Program.DATAFOLDER + "dlog.txt");
+                System.Diagnostics.Process.Start("notepad", "" + Program.DATAFOLDER + "dlog2.txt");
             }
             else
             {
-                MessageBox.Show("File not found: " + Program.DATAFOLDER + "dlog.txt");
+                MessageBox.Show("File not found: " + Program.DATAFOLDER + "dlog2.txt");
             }
         }
 

@@ -259,7 +259,7 @@
             // 
             this.openUpDlogtxtToolStripMenuItem.Name = "openUpDlogtxtToolStripMenuItem";
             this.openUpDlogtxtToolStripMenuItem.Size = new System.Drawing.Size(218, 22);
-            this.openUpDlogtxtToolStripMenuItem.Text = "Open up dlog.txt";
+            this.openUpDlogtxtToolStripMenuItem.Text = "Open up dlog2.txt";
             this.openUpDlogtxtToolStripMenuItem.Click += new System.EventHandler(this.openUpDlogtxtToolStripMenuItem_Click);
             // 
             // openUpExlogtxtToolStripMenuItem

@@ -43,15 +43,15 @@
             this.openUpExlogtxtToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openUpLtxtToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.dgvSend = new System.Windows.Forms.DataGridView();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvRecv)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvSend)).BeginInit();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dgvRecv
@@ -92,19 +92,19 @@
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.openToolStripMenuItem.Text = "Open..";
             // 
             // saveToolStripMenuItem1
             // 
             this.saveToolStripMenuItem1.Name = "saveToolStripMenuItem1";
-            this.saveToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.saveToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.saveToolStripMenuItem1.Text = "Save";
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(149, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(177, 6);
             // 
             // cSVToolStripMenuItem1
             // 
@@ -112,25 +112,25 @@
             this.exportToolStripMenuItem1,
             this.importToolStripMenuItem1});
             this.cSVToolStripMenuItem1.Name = "cSVToolStripMenuItem1";
-            this.cSVToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.cSVToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.cSVToolStripMenuItem1.Text = "CSV";
             // 
             // exportToolStripMenuItem1
             // 
             this.exportToolStripMenuItem1.Name = "exportToolStripMenuItem1";
-            this.exportToolStripMenuItem1.Size = new System.Drawing.Size(119, 22);
+            this.exportToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.exportToolStripMenuItem1.Text = "Export...";
             // 
             // importToolStripMenuItem1
             // 
             this.importToolStripMenuItem1.Name = "importToolStripMenuItem1";
-            this.importToolStripMenuItem1.Size = new System.Drawing.Size(119, 22);
+            this.importToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
             this.importToolStripMenuItem1.Text = "Import...";
             // 
             // exportToCSVToolStripMenuItem
             // 
             this.exportToCSVToolStripMenuItem.Name = "exportToCSVToolStripMenuItem";
-            this.exportToCSVToolStripMenuItem.Size = new System.Drawing.Size(90, 20);
+            this.exportToCSVToolStripMenuItem.Size = new System.Drawing.Size(91, 20);
             this.exportToCSVToolStripMenuItem.Text = "Export to CSV";
             this.exportToCSVToolStripMenuItem.Visible = false;
             // 
@@ -147,19 +147,19 @@
             // openUpDlogtxtToolStripMenuItem
             // 
             this.openUpDlogtxtToolStripMenuItem.Name = "openUpDlogtxtToolStripMenuItem";
-            this.openUpDlogtxtToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.openUpDlogtxtToolStripMenuItem.Size = new System.Drawing.Size(219, 22);
             this.openUpDlogtxtToolStripMenuItem.Text = "Open up dlog.txt";
             // 
             // openUpExlogtxtToolStripMenuItem
             // 
             this.openUpExlogtxtToolStripMenuItem.Name = "openUpExlogtxtToolStripMenuItem";
-            this.openUpExlogtxtToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.openUpExlogtxtToolStripMenuItem.Size = new System.Drawing.Size(219, 22);
             this.openUpExlogtxtToolStripMenuItem.Text = "Open up exlog.txt";
             // 
             // openUpLtxtToolStripMenuItem
             // 
             this.openUpLtxtToolStripMenuItem.Name = "openUpLtxtToolStripMenuItem";
-            this.openUpLtxtToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.openUpLtxtToolStripMenuItem.Size = new System.Drawing.Size(219, 22);
             this.openUpLtxtToolStripMenuItem.Text = "Open up Saving File Log.txt";
             // 
             // tableLayoutPanel1
@@ -176,17 +176,6 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(790, 412);
             this.tableLayoutPanel1.TabIndex = 6;
-            // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.dgvRecv);
-            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox1.Location = new System.Drawing.Point(3, 3);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(389, 406);
-            this.groupBox1.TabIndex = 5;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Packet Handlers";
             // 
             // groupBox2
             // 
@@ -211,6 +200,17 @@
             this.dgvSend.Size = new System.Drawing.Size(383, 387);
             this.dgvSend.TabIndex = 4;
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.dgvRecv);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(389, 406);
+            this.groupBox1.TabIndex = 5;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Packet Handlers";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -225,9 +225,9 @@
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
-            this.groupBox1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvSend)).EndInit();
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
