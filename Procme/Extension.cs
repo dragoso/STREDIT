@@ -141,7 +141,7 @@ namespace Procme
             byte[] data;
             if (pIsBstr)
             {
-                data = Encoding.GetEncoding(949).GetBytes(pValue);
+                data = Encoding.GetEncoding(28591).GetBytes(pValue);
             }
             else
             {
@@ -297,7 +297,7 @@ namespace Procme
                 {
                     buffer[i] = (byte)ret[i];
                 }
-                ret = Encoding.GetEncoding(949).GetString(buffer);
+                ret = Encoding.GetEncoding(28591).GetString(buffer);
             }
 
             return ret;
